@@ -18,6 +18,7 @@ REQUIRED_PYTHON_PACKAGES = {
     "keyring": "keyring",
     "psutil": "psutil",
     "PySide6": "PySide6",
+    "packaging": "packaging",
 }
 
 
