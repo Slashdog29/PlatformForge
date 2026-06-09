@@ -1,10 +1,11 @@
 # PlatformForge ⚙️
-Gestor de Servidores Locales para Arch Linux
 
 [![Status](https://img.shields.io/badge/Status-Development-orange?style=flat-for-the-badge)](https://github.com/Slashdog29/PlatformForge)
 [![Architecture](https://img.shields.io/badge/Architecture-Modular-blue?style=flat-for-the-badge)](https://github.com/Slashdog29/PlatformForge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![OS](https://img.shields.io/badge/OS-Arch_Linux_Based-1793d1?style=flat-for-the-badge&logo=arch-linux)](https://archlinux.org/)
+
+Gestor de Servidores Locales para Arch Linux
 Un gestor de servidores locales modular y extensible, inspirado en XAMPP pero optimizado para el ecosistema Arch Linux.
 
 **PlatformForge** es una plataforma profesional diseñada para la gestión integral de entornos de desarrollo local, optimizada exclusivamente para **Arch Linux y distribuciones basadas en él** (como CachyOS, EndeavourOS, Manjaro, etc.). Su objetivo es centralizar la administración de servicios, versiones y configuraciones técnicas bajo una arquitectura altamente modular, ordenada y escalable.
