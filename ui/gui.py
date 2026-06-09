@@ -1,6 +1,5 @@
 """
-PlatformForge GUI - Dashboard completo con menú contextual, traducciones,
-                    herramientas, servicios, logs y autenticación sudo gráfica.
+PlatformForge GUI - Panel de control moderno y funcional.
 """
 import sys
 import subprocess
@@ -11,19 +10,15 @@ import glob
 from pathlib import Path
 from datetime import datetime
 
-try:
-    from PySide6.QtWidgets import (
-        QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-        QLabel, QPushButton, QComboBox, QProgressBar, QTextEdit,
-        QFrame, QGridLayout, QLineEdit, QFileDialog, QMessageBox,
-        QGroupBox, QSystemTrayIcon, QMenu, QStyle, QDialog, QScrollArea,
-        QInputDialog
-    )
-    from PySide6.QtCore import Qt, QTimer, QThread, Signal
-    from PySide6.QtGui import QFont, QIcon
-except ImportError:
-    print("Error: PySide6 no está instalado.")
-    sys.exit(1)
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QComboBox, QProgressBar, QTextEdit,
+    QFrame, QGridLayout, QLineEdit, QFileDialog, QMessageBox,
+    QGroupBox, QSystemTrayIcon, QMenu, QStyle, QDialog, QScrollArea,
+    QInputDialog
+)
+from PySide6.QtCore import Qt, QTimer, QThread, Signal
+from PySide6.QtGui import QFont, QIcon, QPalette, QColor
 
 from core.app import App
 from auth.github_oauth import start_flow
@@ -33,99 +28,178 @@ from auth.session_store import save_session
 TRANSLATIONS = {
     "EN": {
         "title": "PlatformForge - Arch Admin",
-        "header_title": "PLATFORM FORGE",
-        "php_unit": "PHP UNIT:",
-        "project": "PROJECT:",
-        "maintenance": "SYSTEM MAINTENANCE",
-        "open_proj": "🚀 OPEN PROJECT",
-        "link_start": "⚡ LINK START",
-        "log_out": "🛑 LOG OUT",
-        "yui_btn": "📄 ACTIVATE LOG MONITOR (YUI TERMINAL)",
-        "lang_menu": "🇺🇸 Change Language",
+        "header_title": "⚡ PLATFORM FORGE",
+        "php_unit": "PHP Unit:",
+        "project": "Project:",
+        "maintenance": "System Maintenance",
+        "open_proj": "🚀 Open Project",
+        "link_start": "⚡ Link Start",
+        "log_out": "🛑 Log Out",
+        "yui_btn": "📄 Show Log Monitor",
+        "lang_menu": "🇺🇸 Language",
         "opt_root": "📂 Root Folder",
-        "opt_add": "🖥️ Add to Menu",
-        "opt_rm": "❌ Remove from Menu",
         "opt_php": "⚙️ PHP Config",
         "opt_clear": "🧹 Clear Logs",
-        "opt_update_panel": "🔼 Update Panel",
-        "opt_check_releases": "🔔 Check Releases",
-        "opt_save_token": "🔐 Save Git Token",
-        "opt_repair_panel": "🛠️ Repair Panel",
+        "opt_repair_panel": "🛠️ Repair Apache",
+        "opt_update_panel": "🔼 Update System",
+        "opt_save_token": "🔐 GitHub Login",
         "opt_about": "ℹ️ About",
-        "opt_hide": "👻 Hide Panel",
-        "opt_sync": "🔄 Sync Web Folder",
-        "tools": ["Repair Apache", "Optimize RAM", "🐘 Change PHP", "📧 Mailpit", "🧹 Clear Logs", "⚙️ Config Root", "Hide Yui"],
+        "tools": ["Repair Apache", "Optimize RAM", "🐘 Change PHP", "📧 Mailpit", "🧹 Clear Logs", "⚙️ Config Root", "Hide Logs"],
         "tray_toggle": "Show/Hide Panel",
-        "tray_start": "🚀 Link Start (Services)",
-        "tray_stop": "💤 Log Out (Stop All)",
-        "tray_open": "📂 Open Projects Root",
-        "tray_exit": "❌ Exit PlatformForge",
+        "tray_start": "🚀 Link Start",
+        "tray_stop": "💤 Log Out",
+        "tray_open": "📂 Open Root",
+        "tray_exit": "❌ Exit",
     },
     "ES": {
         "title": "PlatformForge - Administrador Arch",
-        "header_title": "PLATFORM FORGE",
-        "php_unit": "UNIDAD PHP:",
-        "project": "PROYECTO:",
-        "maintenance": "MANTENIMIENTO DEL SISTEMA",
-        "open_proj": "🚀 ABRIR PROYECTO",
-        "link_start": "⚡ LINK START",
-        "log_out": "🛑 LOG OUT",
-        "yui_btn": "📄 ACTIVAR MONITOR DE LOGS (TERMINAL YUI)",
-        "lang_menu": "🇪🇸 Cambiar Idioma",
+        "header_title": "⚡ PLATFORM FORGE",
+        "php_unit": "Unidad PHP:",
+        "project": "Proyecto:",
+        "maintenance": "Mantenimiento del Sistema",
+        "open_proj": "🚀 Abrir Proyecto",
+        "link_start": "⚡ Link Start",
+        "log_out": "🛑 Log Out",
+        "yui_btn": "📄 Mostrar Monitor de Logs",
+        "lang_menu": "🇪🇸 Idioma",
         "opt_root": "📂 Carpeta Raíz",
-        "opt_add": "🖥️ Añadir al Menú",
-        "opt_rm": "❌ Quitar del Menú",
         "opt_php": "⚙️ Configuración PHP",
         "opt_clear": "🧹 Limpiar Logs",
-        "opt_update_panel": "🔼 Actualizar Panel",
-        "opt_check_releases": "🔔 Comprobar Lanzamientos",
-        "opt_save_token": "🔐 Guardar Token Git",
-        "opt_repair_panel": "🛠️ Reparar Panel",
+        "opt_repair_panel": "🛠️ Reparar Apache",
+        "opt_update_panel": "🔼 Actualizar Sistema",
+        "opt_save_token": "🔐 Iniciar sesión GitHub",
         "opt_about": "ℹ️ Acerca de",
-        "opt_hide": "👻 Ocultar Panel",
-        "opt_sync": "🔄 Sincronizar Carpeta Web",
-        "tools": ["Reparar Apache", "Optimizar RAM", "🐘 Cambiar PHP", "📧 Mailpit", "🧹 Vaciar Logs", "⚙️ Config Raíz", "Hide Yui"],
-        "tray_toggle": "Mostrar/Ocultar Panel",
-        "tray_start": "🚀 Link Start (Servicios)",
-        "tray_stop": "💤 Log Out (Detener Todo)",
-        "tray_open": "📂 Abrir Raíz Proyectos",
-        "tray_exit": "❌ Salir de PlatformForge",
+        "tools": ["Reparar Apache", "Optimizar RAM", "🐘 Cambiar PHP", "📧 Mailpit", "🧹 Vaciar Logs", "⚙️ Config Raíz", "Ocultar Logs"],
+        "tray_toggle": "Mostrar/Ocultar",
+        "tray_start": "🚀 Link Start",
+        "tray_stop": "💤 Log Out",
+        "tray_open": "📂 Abrir Raíz",
+        "tray_exit": "❌ Salir",
     }
 }
 
-# ------------------- ESTILO MODERNO -------------------
+# ------------------- ESTILO ÚNICO Y MODERNO -------------------
 STYLE = """
-QMainWindow { background-color: #1e1e2e; }
-QWidget { color: #cdd6f4; font-family: "Segoe UI", sans-serif; }
-QTabWidget::pane { border: 1px solid #45475a; background: #1e1e2e; }
-QTabBar::tab { background: #313244; color: #cdd6f4; padding: 8px 16px; margin-right: 2px; }
-QTabBar::tab:selected { background: #45475a; font-weight: bold; }
-QGroupBox { border: 1px solid #45475a; border-radius: 6px; margin-top: 10px; color: #cdd6f4; font-weight: bold; }
-QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }
-QPushButton { background-color: #89b4fa; color: #1e1e2e; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
-QPushButton:hover { background-color: #74c7ec; }
-QPushButton:pressed { background-color: #89dceb; }
-QPushButton:disabled { background-color: #585b70; color: #a6adc8; }
-QLabel { color: #cdd6f4; }
-QComboBox { background-color: #313244; color: #cdd6f4; border: 1px solid #45475a; padding: 4px; border-radius: 4px; }
-QLineEdit { background-color: #313244; color: #cdd6f4; border: 1px solid #45475a; padding: 6px; border-radius: 4px; }
-QTextEdit { background-color: #181825; color: #cdd6f4; border: 1px solid #45475a; font-family: "Fira Code", monospace; }
-QProgressBar { border: 1px solid #45475a; background-color: #313244; text-align: center; color: #cdd6f4; border-radius: 4px; }
-QProgressBar::chunk { background-color: #a6e3a1; }
-QMenu {
-    background-color: rgba(15, 15, 22, 0.98);
-    border: 1px solid #00ffcc;
+QMainWindow {
+    background-color: #0b0e14;
+}
+QWidget {
+    color: #cfd8dc;
+    font-family: "Inter", "Segoe UI", sans-serif;
+    font-size: 13px;
+}
+#Sidebar {
+    background-color: #151921;
+    border-right: 1px solid #252a33;
+    min-width: 220px;
+}
+#MainContent {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0b0e14, stop:1 #1a1f29);
+}
+.ServiceCard {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1b1e2b, stop:1 #111420);
+    border: 1px solid #2a2e3a;
+    border-radius: 12px;
+    padding: 15px;
+}
+.ServiceCard:hover {
+    border-color: #00e5ff;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #222638, stop:1 #1a1e2e);
+}
+QPushButton {
+    background: #252a33;
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background: #353b45;
+}
+.PrimaryBtn {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00e5ff, stop:1 #1200ff);
     color: white;
 }
-QMenu::item {
-    padding: 8px 25px;
-    background: transparent;
+.PrimaryBtn:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00f2fe, stop:1 #4facfe);
 }
-QMenu::item:selected {
-    background-color: rgba(0, 255, 204, 0.2);
-    color: #00ffcc;
+.DangerBtn {
+    background: #ff5252;
+}
+
+QComboBox {
+    background: #151921;
+    border: 1px solid #353b45;
+    padding: 8px;
+    border-radius: 6px;
+}
+QTextEdit {
+    background: #05070a;
+    color: #00ff41;
+    border: 1px solid #252a33;
+    font-family: "Fira Code", monospace;
+    border-radius: 8px;
+}
+QProgressBar {
+    background: #151921;
+    border-radius: 10px;
+    height: 10px;
+    text-align: transparent;
+}
+QProgressBar::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00e5ff, stop:1 #ab47bc);
+    border-radius: 10px;
 }
 """
+
+# ------------------- COMPONENTE: TARJETA DE SERVICIO -------------------
+class ServiceCard(QFrame):
+    def __init__(self, name, key, app, parent=None):
+        super().__init__(parent)
+        self.setObjectName(f"card_{key}")
+        self.setProperty("class", "ServiceCard")
+        self.key = key
+        self.app = app
+        self.service = app.get_service(key)
+        
+        layout = QVBoxLayout(self)
+        
+        self.title = QLabel(name.upper())
+        self.title.setStyleSheet("font-weight: 900; color: #00e5ff; font-size: 14px;")
+        layout.addWidget(self.title)
+
+        self.status_dot = QLabel("● Desconocido")
+        layout.addWidget(self.status_dot)
+
+        self.version_lbl = QLabel("Versión: --")
+        self.version_lbl.setStyleSheet("color: #78909c; font-size: 11px;")
+        layout.addWidget(self.version_lbl)
+
+        btn_row = QHBoxLayout()
+        self.btn_toggle = QPushButton("Gestionar")
+        self.btn_toggle.clicked.connect(self.on_manage_clicked)
+        btn_row.addWidget(self.btn_toggle)
+        layout.addLayout(btn_row)
+
+    def update_info(self, status):
+        color = "#00e676" if status == "active" else "#ff5252"
+        self.status_dot.setText(f"● {status.upper()}")
+        self.status_dot.setStyleSheet(f"color: {color}; font-weight: bold;")
+        if self.service.is_installed():
+            self.version_lbl.setText(f"Versión: {self.service.get_version()}")
+        else:
+            self.version_lbl.setText("Estado: No instalado")
+
+    def on_manage_clicked(self):
+        menu = QMenu(self)
+        menu.setStyleSheet("QMenu { background-color: #151921; color: #cfd8dc; border: 1px solid #00e5ff; } QMenu::item:selected { background-color: #00e5ff; color: #0b0e14; }")
+        acciones = [("▶ Iniciar", "start"), ("⏹ Detener", "stop"), ("🔄 Reiniciar", "restart"), ("🛠 Reparar", "repair")]
+        for label, action_id in acciones:
+            q_action = menu.addAction(label)
+            # Conectamos dinámicamente a la acción en la ventana principal
+            q_action.triggered.connect(lambda checked=False, a=action_id: self.window().service_action(self.key, a))
+        menu.exec(self.btn_toggle.mapToGlobal(self.btn_toggle.rect().bottomLeft()))
 
 # ------------------- DIÁLOGO SUDO -------------------
 class SudoDialog(QDialog):
@@ -138,16 +212,19 @@ class SudoDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         title = QLabel("Se requieren privilegios de administrador")
-        title.setStyleSheet("font-size: 14px; font-weight: bold;")
+        title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffaa00;")
         layout.addWidget(title)
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setPlaceholderText("Contraseña sudo")
+        self.password_input.setStyleSheet("border: 1px solid #ffaa00;")
         layout.addWidget(self.password_input)
         btn_layout = QHBoxLayout()
         btn_cancel = QPushButton("Cancelar")
+        btn_cancel.setStyleSheet("background: #444466;")
         btn_cancel.clicked.connect(self.reject)
         btn_ok = QPushButton("Autorizar")
+        btn_ok.setStyleSheet("background: #ffaa00; color: #000;")
         btn_ok.clicked.connect(self.accept)
         btn_ok.setDefault(True)
         btn_layout.addWidget(btn_cancel)
@@ -171,28 +248,29 @@ class MissingDepsDialog(QDialog):
     def __init__(self, missing_crit, missing_recom, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Dependencias faltantes")
-        self.setFixedSize(500, 300)
+        self.setFixedSize(500, 320)
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(25, 25, 25, 25)
-        title = QLabel("Verificación de dependencias del sistema")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #f9e2af;")
+        title = QLabel("Verificación de dependencias")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #ffaa00;")
         layout.addWidget(title)
         if missing_crit:
-            layout.addWidget(QLabel("⚠️ Paquetes críticos faltantes:"))
+            layout.addWidget(QLabel("⚠️ Críticos:"))
             for pkg in missing_crit:
                 layout.addWidget(QLabel(f"  • {pkg}"))
         if missing_recom:
-            layout.addWidget(QLabel("ℹ️ Paquetes recomendados faltantes:"))
+            layout.addWidget(QLabel("ℹ️ Recomendados:"))
             for pkg in missing_recom:
                 layout.addWidget(QLabel(f"  • {pkg}"))
         layout.addStretch()
         btn_layout = QHBoxLayout()
         btn_ignore = QPushButton("Ignorar")
+        btn_ignore.setStyleSheet("background: #444466;")
         btn_ignore.clicked.connect(self.reject)
         btn_install = QPushButton("Instalar automáticamente")
-        btn_install.setStyleSheet("background-color: #a6e3a1; color: #1e1e2e;")
+        btn_install.setStyleSheet("background: #00cc99; color: #000; font-weight: bold;")
         btn_install.clicked.connect(self.accept)
         btn_layout.addWidget(btn_ignore)
         btn_layout.addWidget(btn_install)
@@ -226,41 +304,50 @@ class MainWindow(QMainWindow):
     def __init__(self, app: App):
         super().__init__()
         self.app = app
+        self.worker = None
         self.sudo_password = None
         self.idioma = "ES"
         self.favoritos = []
         self.dir_proyectos = "/srv/http" if Path("/etc/arch-release").exists() else "/var/www/html"
         self.ruta_config = Path.home() / ".platformforge" / "config_gui.json"
-        self.critical_deps = ["php", "apache", "mariadb", "php-apache", "postgresql"]
+        
+        # Corrección de dependencias: se añaden paquetes faltantes detectados
+        self.critical_deps = ["php", "apache", "mariadb", "php-apache", "postgresql", "python-psutil"]
         self.recommended_deps = ["nodejs", "npm", "python-pip", "git"]
 
-        self.setWindowTitle("PlatformForge - Panel de Control")
-        self.setMinimumSize(1050, 780)
+        self.setWindowTitle("PlatformForge Professional")
+        self.setMinimumSize(1200, 850)
+        self.setWindowIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.cargar_configuracion()
 
+        # Scroll principal
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.container = QWidget(objectName="MainContainer")
         self.scroll.setWidget(self.container)
         self.setCentralWidget(self.scroll)
 
+        # Monitor de logs (oculto por defecto)
         self.log_view = QTextEdit()
         self.log_view.setReadOnly(True)
-        self.log_view.setMaximumHeight(150)
-        self.log_view.hide()  # Inicialmente oculto
+        self.log_view.setMaximumHeight(160)
+        self.log_view.hide()
 
         self.init_ui()
 
+        # Métricas
         self.stats_timer = QTimer()
         self.stats_timer.timeout.connect(self.refresh_stats)
         self.stats_timer.start(2000)
 
+        # Bandeja
         self.setup_tray()
 
-        QTimer.singleShot(500, self.check_environment_dependencies)
+        # Verificar dependencias después de cargar la UI
+        QTimer.singleShot(600, self.check_environment_dependencies)
         QTimer.singleShot(100, self.refresh_php_combo)
         QTimer.singleShot(200, self.refresh_projects)
 
@@ -294,7 +381,7 @@ class MainWindow(QMainWindow):
             check = subprocess.run(["sudo", "-S", "true"], input=f"{password}\n", text=True, capture_output=True)
             if check.returncode == 0:
                 self.sudo_password = password
-                self.log("Autenticación exitosa.")
+                self.log("Autenticación sudo exitosa.")
                 return True
             else:
                 self.log("Contraseña incorrecta.")
@@ -307,33 +394,71 @@ class MainWindow(QMainWindow):
 
     # ==================== INTERFAZ GRÁFICA ====================
     def init_ui(self):
-        main_layout = QVBoxLayout(self.container)
-        main_layout.setContentsMargins(30, 30, 30, 30)
-        main_layout.setSpacing(15)
+        root_layout = QHBoxLayout(self.container)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
 
+        # --- SIDEBAR ---
+        sidebar = QWidget(objectName="Sidebar")
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(15, 30, 15, 30)
+        
         # --- ENCABEZADO ---
         header = QHBoxLayout()
         self.title_lbl = QLabel(TRANSLATIONS[self.idioma]["header_title"])
-        self.title_lbl.setStyleSheet("font-size: 22px; font-weight: 900; color: #89b4fa;")
+        self.title_lbl.setStyleSheet("font-size: 26px; font-weight: 900; color: #ffaa00; letter-spacing: 2px;")
         header.addWidget(self.title_lbl)
         header.addStretch()
         self.btn_menu = QPushButton("⋮")
         self.btn_menu.setFixedSize(35, 35)
+        self.btn_menu.setStyleSheet("font-size: 18px; background: transparent; border: none; color: #e0e0f2;")
         self.btn_menu.clicked.connect(self.show_options_menu)
         header.addWidget(self.btn_menu)
         self.btn_close = QPushButton("✕")
         self.btn_close.setFixedSize(35, 35)
+        self.btn_close.setStyleSheet("font-size: 16px; background: transparent; border: none; color: #ff6666;")
         self.btn_close.clicked.connect(self.close)
         header.addWidget(self.btn_close)
-        main_layout.addLayout(header)
+        sidebar_layout.addLayout(header)
+        sidebar_layout.addSpacing(40)
 
-        # --- ACCESOS DIRECTOS ---
+        # Navegación
+        for label in ["DASHBOARD", "SERVICES", "PROJECTS", "LOGS"]:
+            btn_nav = QPushButton(label)
+            btn_nav.setStyleSheet("text-align: left; padding: 12px; background: transparent; color: #90a4ae;")
+            sidebar_layout.addWidget(btn_nav)
+        
+        sidebar_layout.addStretch()
+        
+        # Métricas en Sidebar
+        self.cpu_bar = QProgressBar()
+        self.ram_bar = QProgressBar()
+        sidebar_layout.addWidget(QLabel("SYSTEM LOAD"))
+        sidebar_layout.addWidget(self.cpu_bar)
+        sidebar_layout.addWidget(self.ram_bar)
+        
+        self.btn_log_out = QPushButton(TRANSLATIONS[self.idioma]["log_out"])
+        self.btn_log_out.setProperty("class", "DangerBtn")
+        self.btn_log_out.clicked.connect(self.log_out)
+        sidebar_layout.addWidget(self.btn_log_out)
+
+        root_layout.addWidget(sidebar)
+
+        # --- CONTENIDO PRINCIPAL ---
+        main_area = QWidget(objectName="MainContent")
+        main_layout = QVBoxLayout(main_area)
+        main_layout.setContentsMargins(40, 40, 40, 40)
+        main_layout.setSpacing(20)
+
+        root_layout.addWidget(main_area)
+
+        # --- ACCESOS DIRECTOS RÁPIDOS ---
         quick_row = QHBoxLayout()
         self.btn_php_config = QPushButton(TRANSLATIONS[self.idioma]["opt_php"])
         self.btn_localhost_root = QPushButton(TRANSLATIONS[self.idioma]["opt_root"])
         self.btn_localhost_web = QPushButton("🌐 Localhost Web")
         for btn in (self.btn_php_config, self.btn_localhost_root, self.btn_localhost_web):
-            btn.setStyleSheet("background-color: #45475a; color: #cdd6f4; border: 1px solid #585b70;")
+            btn.setStyleSheet("background: rgba(255,255,255,0.05); border: 1px solid #4a4a8a; padding: 6px 12px;")
         self.btn_php_config.clicked.connect(self.open_php_config)
         self.btn_localhost_root.clicked.connect(self.open_localhost_root)
         self.btn_localhost_web.clicked.connect(self.open_web_localhost)
@@ -343,62 +468,53 @@ class MainWindow(QMainWindow):
         quick_row.addStretch()
         main_layout.addLayout(quick_row)
 
-        # --- MÉTRICAS ---
-        metrics = QHBoxLayout()
-        self.cpu_bar = QProgressBar()
-        self.ram_bar = QProgressBar()
-        metrics.addWidget(QLabel("CPU:"))
-        metrics.addWidget(self.cpu_bar)
-        metrics.addWidget(QLabel("RAM:"))
-        metrics.addWidget(self.ram_bar)
-        main_layout.addLayout(metrics)
-
         # --- SELECTORES PHP / PROYECTO ---
         sel_row = QHBoxLayout()
         sel_row.addWidget(QLabel(TRANSLATIONS[self.idioma]["php_unit"]))
         self.php_combo = QComboBox()
-        self.php_combo.setMinimumWidth(150)
+        self.php_combo.setMinimumWidth(140)
         sel_row.addWidget(self.php_combo, 1)
         self.btn_switch_php = QPushButton("Cambiar")
         self.btn_switch_php.clicked.connect(self.switch_php)
         sel_row.addWidget(self.btn_switch_php)
-        self.btn_install_php = QPushButton("Instalar versión")
+        self.btn_install_php = QPushButton("Instalar")
         self.btn_install_php.clicked.connect(self.install_php_dialog)
         sel_row.addWidget(self.btn_install_php)
 
-        sel_row.addSpacing(20)
+        sel_row.addSpacing(25)
         sel_row.addWidget(QLabel(TRANSLATIONS[self.idioma]["project"]))
         self.project_combo = QComboBox()
-        self.project_combo.setMinimumWidth(200)
+        self.project_combo.setMinimumWidth(180)
         self.project_combo.currentTextChanged.connect(self.actualizar_icono_favorito)
         sel_row.addWidget(self.project_combo, 2)
         self.btn_fav = QPushButton("☆")
         self.btn_fav.setFixedSize(40, 35)
-        self.btn_fav.setStyleSheet("font-size: 18px; color: #f9e2af;")
+        self.btn_fav.setStyleSheet("font-size: 20px; color: #ffcc00; background: transparent; border: none;")
         self.btn_fav.clicked.connect(self.alternar_favorito)
         sel_row.addWidget(self.btn_fav)
         self.btn_open_project = QPushButton(TRANSLATIONS[self.idioma]["open_proj"])
+        self.btn_open_project.setStyleSheet("background: #ffaa00; color: #000; font-weight: bold;")
         self.btn_open_project.clicked.connect(self.abrir_proyecto_seleccionado)
         sel_row.addWidget(self.btn_open_project)
         main_layout.addLayout(sel_row)
 
-        # --- SERVICIOS (3 columnas) ---
-        services_layout = QHBoxLayout()
-        services_layout.addWidget(self._crear_panel_servicio("Apache", "apache", "httpd"))
-        services_layout.addWidget(self._crear_panel_servicio("MySQL/MariaDB", "mysql", "mariadb"))
-        services_layout.addWidget(self._crear_panel_servicio("PostgreSQL", "postgresql", "postgresql"))
+        # --- PANELES DE SERVICIOS (3 columnas) ---
+        services_layout = QGridLayout()
+        self.cards = {
+            "apache": ServiceCard("Apache Server", "apache", self.app),
+            "mysql": ServiceCard("MariaDB / MySQL", "mysql", self.app),
+            "postgresql": ServiceCard("PostgreSQL", "postgresql", self.app)
+        }
+        for i, card in enumerate(self.cards.values()):
+            services_layout.addWidget(card, 0, i)
         main_layout.addLayout(services_layout)
 
-        # --- BOTONES POWER ---
+        # --- BOTONES DE ACCIÓN GLOBAL ---
         power_row = QHBoxLayout()
         self.btn_link_start = QPushButton(TRANSLATIONS[self.idioma]["link_start"])
-        self.btn_link_start.setStyleSheet("background-color: #a6e3a1; color: #1e1e2e; font-size: 14px; padding: 12px;")
+        self.btn_link_start.setStyleSheet("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #006644, stop:1 #00aa44); color: #fff; font-size: 14px; padding: 12px; border-radius: 8px;")
         self.btn_link_start.clicked.connect(self.link_start)
-        self.btn_log_out = QPushButton(TRANSLATIONS[self.idioma]["log_out"])
-        self.btn_log_out.setStyleSheet("background-color: #f38ba8; color: #1e1e2e; font-size: 14px; padding: 12px;")
-        self.btn_log_out.clicked.connect(self.log_out)
         power_row.addWidget(self.btn_link_start)
-        power_row.addWidget(self.btn_log_out)
         main_layout.addLayout(power_row)
 
         # --- HERRAMIENTAS (Grid) ---
@@ -428,18 +544,20 @@ class MainWindow(QMainWindow):
         tools_group.setLayout(tools_grid)
         main_layout.addWidget(tools_group)
 
-        # --- MONITOR DE LOGS (botón toggle) ---
+        # --- MONITOR DE LOGS (toggle) ---
         self.btn_toggle_logs = QPushButton(TRANSLATIONS[self.idioma]["yui_btn"])
         self.btn_toggle_logs.clicked.connect(self.toggle_logs)
         main_layout.addWidget(self.btn_toggle_logs)
         main_layout.addWidget(self.log_view)
 
+        # Refrescar datos iniciales
         self.refresh_services_status()
         self.refresh_php_combo()
         self.refresh_projects()
 
     def _crear_panel_servicio(self, nombre, key, unit):
         group = QGroupBox(nombre)
+        group.setStyleSheet("QGroupBox { font-size: 14px; }")
         layout = QVBoxLayout()
         status_lbl = QLabel("Estado: ...")
         version_lbl = QLabel("Versión: ...")
@@ -458,23 +576,18 @@ class MainWindow(QMainWindow):
 
     # ==================== ACCIONES SERVICIOS ====================
     def service_action(self, name, action):
-        unit_map = {"apache": "httpd", "mysql": "mariadb", "postgresql": "postgresql"}
-        unit = unit_map.get(name)
-        if not unit:
-            return
-        if action in ("start", "stop", "restart"):
-            res = self.run_sudo_command(["systemctl", action, unit])
-            if res and res.returncode == 0:
-                self.log(f"{name}: {action} correcto")
+        try:
+            srv = self.app.get_service(name)
+            func = getattr(srv, action, None)
+            if func:
+                success = func()
+                res_str = "exitoso" if success else "fallido o requiere atención"
+                self.log(f"{name.upper()}: {action} {res_str}")
             else:
-                self.log(f"{name}: error al {action}")
-        elif action == "repair":
-            if name == "apache":
-                self.run_sudo_command(["httpd", "-t"])
-            elif name == "mysql":
-                self.run_sudo_command(["mysqlcheck", "--all-databases", "--auto-repair"])
-            elif name == "postgresql":
-                self.log("Reparación PostgreSQL no implementada.")
+                self.log(f"Acción '{action}' no soportada para el servicio {name}")
+        except Exception as e:
+            self.log(f"Error ejecutando {action} en {name}: {str(e)}")
+
         QTimer.singleShot(1000, self.refresh_services_status)
 
     def refresh_services_status(self):
@@ -483,16 +596,10 @@ class MainWindow(QMainWindow):
                 res = subprocess.run(["systemctl", "is-active", u], capture_output=True, text=True)
                 return res.stdout.strip()
             except:
-                return "desconocido"
-
+                return "inactive"
+        
         for key, unit in [("apache", "httpd"), ("mysql", "mariadb"), ("postgresql", "postgresql")]:
-            status_lbl = getattr(self, f"{key}_status_lbl", None)
-            version_lbl = getattr(self, f"{key}_version_lbl", None)
-            if status_lbl:
-                status_lbl.setText(f"Estado: {unit_status(unit)}")
-            if version_lbl:
-                srv = self.app.get_service(key)
-                version_lbl.setText(f"Versión: {srv.get_version() if srv.is_installed() else 'no'}")
+            self.cards[key].update_info(unit_status(unit))
 
     def link_start(self):
         for s in ["apache", "mysql", "postgresql"]:
@@ -553,7 +660,7 @@ class MainWindow(QMainWindow):
         if ok and version:
             php = self.app.get_service("php")
             self.worker = ServiceWorker(php.install_version, version)
-            self.worker.finished.connect(lambda ok, msg: self.log(f"Instalación PHP {version}: {msg}"))
+            self.worker.finished.connect(lambda ok, msg: self.log(f"PHP {version}: {msg}"))
             self.worker.start()
             QTimer.singleShot(3000, self.refresh_php_combo)
 
@@ -641,7 +748,7 @@ class MainWindow(QMainWindow):
         else:
             self.log("Todas las dependencias están satisfechas.")
 
-    # ==================== CUENTA Y LICENCIA (MENÚ) ====================
+    # ==================== MENÚ SUPERIOR (⋮) ====================
     def show_options_menu(self):
         t = TRANSLATIONS[self.idioma]
         menu = QMenu(self)
@@ -653,9 +760,10 @@ class MainWindow(QMainWindow):
         menu.addAction(t["opt_update_panel"], self.check_environment_dependencies)
         menu.addSeparator()
         menu.addAction(t["opt_save_token"], self.login_github)
-        menu.addAction(t["opt_about"], self.show_about)
+        menu.addAction("📦 Instalar licencia Pro", self.install_license_dialog)
         menu.addSeparator()
         menu.addAction(t["lang_menu"], self.toggle_language)
+        menu.addAction(t["opt_about"], self.show_about)
         menu.exec(self.btn_menu.mapToGlobal(self.btn_menu.rect().bottomLeft()))
 
     def login_github(self):
@@ -679,6 +787,7 @@ class MainWindow(QMainWindow):
             self.app.session = result
             self.app.reload_feature_manager()
             self.log(f"Sesión iniciada como {result.github_user}")
+            QMessageBox.information(self, "GitHub", f"Bienvenido, {result.github_user}")
 
     def install_license_dialog(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Seleccionar licencia", "", "*.key")
@@ -688,10 +797,15 @@ class MainWindow(QMainWindow):
             shutil.copy(file_path, dest)
             self.app.reload_feature_manager()
             self.log("Licencia instalada.")
-            QMessageBox.information(self, "OK", "Licencia copiada.")
+            QMessageBox.information(self, "Licencia", "Archivo copiado. Si es válido, las funciones Pro se activarán.")
 
     def show_about(self):
-        QMessageBox.information(self, "Acerca de", "PlatformForge v1.0\nGestor de servidores locales para Arch Linux.\nDesarrollado por Slashdog29.")
+        QMessageBox.about(self, "Acerca de",
+            "PlatformForge v1.0\n\n"
+            "Gestor de servidores locales para Arch Linux.\n"
+            "Desarrollado por Slashdog29\n"
+            "Repositorio: github.com/Slashdog29/PlatformForge"
+        )
 
     def toggle_language(self):
         self.idioma = "EN" if self.idioma == "ES" else "ES"
@@ -706,11 +820,11 @@ class MainWindow(QMainWindow):
         self.btn_log_out.setText(t["log_out"])
         self.btn_toggle_logs.setText(t["yui_btn"])
         self.btn_open_project.setText(t["open_proj"])
-        # Actualizar botones de herramientas
+        self.btn_php_config.setText(t["opt_php"])
+        self.btn_localhost_root.setText(t["opt_root"])
         for i, btn in enumerate(self.tool_btns):
             if i < len(t["tools"]):
                 btn.setText(t["tools"][i])
-        # Actualizar menú de bandeja si existe
         if hasattr(self, 'tray_menu'):
             self.update_tray_menu()
 
