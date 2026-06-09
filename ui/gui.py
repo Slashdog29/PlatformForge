@@ -97,14 +97,14 @@ QWidget {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0b0e14, stop:1 #1a1f29);
 }
 .ServiceCard {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1b1e2b, stop:1 #111420);
-    border: 1px solid #2a2e3a;
+    background: #151921;
+    border: 1px solid #252a33;
     border-radius: 12px;
     padding: 15px;
 }
 .ServiceCard:hover {
     border-color: #00e5ff;
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #222638, stop:1 #1a1e2e);
+    background: #1c222d;
 }
 QPushButton {
     background: #252a33;
@@ -198,91 +198,134 @@ class ServiceCard(QFrame):
         for label, action_id in acciones:
             q_action = menu.addAction(label)
             # Conectamos dinámicamente a la acción en la ventana principal
-            q_action.triggered.connect(lambda checked=False, a=action_id: self.window().service_action(self.key, a))
+            q_action.triggered.connect(lambda checked=False, a=action_id: self.parent().window().service_action(self.key, a))
         menu.exec(self.btn_toggle.mapToGlobal(self.btn_toggle.rect().bottomLeft()))
 
 # ------------------- DIÁLOGO SUDO -------------------
 class SudoDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Autenticación requerida")
-        self.setFixedSize(400, 180)
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
+        self.setFixedSize(400, 200)
+        
+        self.container = QFrame(self)
+        self.container.setGeometry(0, 0, 400, 200)
+        self.container.setStyleSheet("background-color: #151921; border: 2px solid #ffaa00; border-radius: 15px;")
+        
+        layout = QVBoxLayout(self.container)
+        layout.setContentsMargins(30, 30, 30, 30)
+        
         title = QLabel("Se requieren privilegios de administrador")
-        title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffaa00;")
+        title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffaa00; border: none;")
+        title.setWordWrap(True)
         layout.addWidget(title)
+        
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setPlaceholderText("Contraseña sudo")
-        self.password_input.setStyleSheet("border: 1px solid #ffaa00;")
+        self.password_input.setStyleSheet("background: #0b0e14; border: 1px solid #ffaa00; padding: 10px; color: white;")
         layout.addWidget(self.password_input)
+        
         btn_layout = QHBoxLayout()
         btn_cancel = QPushButton("Cancelar")
-        btn_cancel.setStyleSheet("background: #444466;")
+        btn_cancel.setStyleSheet("background: #353b45; color: white;")
         btn_cancel.clicked.connect(self.reject)
+        
         btn_ok = QPushButton("Autorizar")
-        btn_ok.setStyleSheet("background: #ffaa00; color: #000;")
+        btn_ok.setStyleSheet("background: #ffaa00; color: #0b0e14; font-weight: bold;")
         btn_ok.clicked.connect(self.accept)
         btn_ok.setDefault(True)
+        
         btn_layout.addWidget(btn_cancel)
         btn_layout.addWidget(btn_ok)
         layout.addLayout(btn_layout)
         self.password_input.setFocus()
+        self.oldPos = self.pos()
 
     def get_password(self):
         return self.password_input.text()
 
     def mousePressEvent(self, event):
-        self.oldPos = event.globalPosition().toPoint()
+        if event.button() == Qt.LeftButton:
+            self.oldPos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
 
     def mouseMoveEvent(self, event):
-        delta = event.globalPosition().toPoint() - self.oldPos
-        self.move(self.x() + delta.x(), self.y() + delta.y())
-        self.oldPos = event.globalPosition().toPoint()
+        if event.buttons() == Qt.LeftButton:
+            self.move(event.globalPosition().toPoint() - self.oldPos)
+            event.accept()
 
 # ------------------- DIÁLOGO DEPENDENCIAS -------------------
 class MissingDepsDialog(QDialog):
     def __init__(self, missing_crit, missing_recom, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Dependencias faltantes")
-        self.setFixedSize(500, 320)
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(25, 25, 25, 25)
+        self.setFixedSize(500, 350)
+        
+        self.container = QFrame(self)
+        self.container.setGeometry(0, 0, 500, 350)
+        self.container.setStyleSheet("background-color: #151921; border: 2px solid #00e5ff; border-radius: 15px;")
+        
+        layout = QVBoxLayout(self.container)
+        layout.setContentsMargins(30, 30, 30, 30)
+        
         title = QLabel("Verificación de dependencias")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #ffaa00;")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #00e5ff; border: none;")
         layout.addWidget(title)
+        
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("background: transparent; border: none;")
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        
         if missing_crit:
-            layout.addWidget(QLabel("⚠️ Críticos:"))
+            lbl = QLabel("⚠️ Críticos:")
+            lbl.setStyleSheet("color: #ff5252; font-weight: bold; border: none;")
+            content_layout.addWidget(lbl)
             for pkg in missing_crit:
-                layout.addWidget(QLabel(f"  • {pkg}"))
+                p_lbl = QLabel(f"  • {pkg}")
+                p_lbl.setStyleSheet("color: #cfd8dc; border: none;")
+                content_layout.addWidget(p_lbl)
+                
         if missing_recom:
-            layout.addWidget(QLabel("ℹ️ Recomendados:"))
+            lbl = QLabel("ℹ️ Recomendados:")
+            lbl.setStyleSheet("color: #4facfe; font-weight: bold; border: none;")
+            content_layout.addWidget(lbl)
             for pkg in missing_recom:
-                layout.addWidget(QLabel(f"  • {pkg}"))
+                p_lbl = QLabel(f"  • {pkg}")
+                p_lbl.setStyleSheet("color: #cfd8dc; border: none;")
+                content_layout.addWidget(p_lbl)
+        
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+        
         layout.addStretch()
         btn_layout = QHBoxLayout()
         btn_ignore = QPushButton("Ignorar")
-        btn_ignore.setStyleSheet("background: #444466;")
+        btn_ignore.setStyleSheet("background: #353b45; color: white;")
         btn_ignore.clicked.connect(self.reject)
-        btn_install = QPushButton("Instalar automáticamente")
-        btn_install.setStyleSheet("background: #00cc99; color: #000; font-weight: bold;")
+        
+        btn_install = QPushButton("Instalar Todo")
+        btn_install.setStyleSheet("background: #00e5ff; color: #0b0e14; font-weight: bold;")
         btn_install.clicked.connect(self.accept)
+        
         btn_layout.addWidget(btn_ignore)
         btn_layout.addWidget(btn_install)
         layout.addLayout(btn_layout)
+        self.oldPos = self.pos()
 
     def mousePressEvent(self, event):
-        self.oldPos = event.globalPosition().toPoint()
+        if event.button() == Qt.LeftButton:
+            self.oldPos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
 
     def mouseMoveEvent(self, event):
-        delta = event.globalPosition().toPoint() - self.oldPos
-        self.move(self.x() + delta.x(), self.y() + delta.y())
-        self.oldPos = event.globalPosition().toPoint()
+        if event.buttons() == Qt.LeftButton:
+            self.move(event.globalPosition().toPoint() - self.oldPos)
+            event.accept()
 
 # ------------------- HILO GENÉRICO -------------------
 class ServiceWorker(QThread):
@@ -314,7 +357,6 @@ class MainWindow(QMainWindow):
         # Corrección de dependencias: se añaden paquetes faltantes detectados
         self.critical_deps = ["php", "apache", "mariadb", "php-apache", "postgresql", "python-psutil"]
         self.recommended_deps = ["nodejs", "npm", "python-pip", "git"]
-
         self.setWindowTitle("PlatformForge Professional")
         self.setMinimumSize(1200, 850)
         self.setWindowIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
@@ -576,6 +618,11 @@ class MainWindow(QMainWindow):
 
     # ==================== ACCIONES SERVICIOS ====================
     def service_action(self, name, action):
+        # Verificar privilegios antes de cualquier acción de servicio
+        if not self.sudo_password and not self.request_sudo_password():
+            self.log(f"Acción {action} cancelada: se requiere autenticación sudo.")
+            return
+
         try:
             srv = self.app.get_service(name)
             func = getattr(srv, action, None)
